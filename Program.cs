@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Threading;
 using System.Windows.Forms;
 
 namespace Conway
@@ -9,12 +8,13 @@ namespace Conway
         private static Grid _grid;
         private static Display _display;
 
+        [STAThread]
         public static void Main(string[] args)
         {
             const int zoom = 1;
             const int width = 1920 * zoom;
             const int height = 1080 * zoom;
-            const int cellSize = 1 * zoom;
+            const int cellSize = 2 * zoom;
             _grid = new Grid(width, height, cellSize);
 
             Application.EnableVisualStyles();

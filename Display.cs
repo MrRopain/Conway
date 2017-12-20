@@ -64,8 +64,6 @@ namespace Conway
                 if (cell.IsAlive)
                 {
                     graphics.FillRectangle(Brushes.White, cell.AbsoluteX, cell.AbsoluteY, Grid.CellSize, Grid.CellSize);
-//                    graphics.DrawLine(Pens.LightGreen, cell.AbsoluteX - 2, cell.AbsoluteY, cell.AbsoluteX + 2, cell.AbsoluteY);
-//                    graphics.DrawLine(Pens.LightGreen, cell.AbsoluteX, cell.AbsoluteY - 2, cell.AbsoluteX, cell.AbsoluteY + 2);
                 }
                 else
                 {
@@ -100,20 +98,69 @@ namespace Conway
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.None;
             this.Name = "Display";
             this.WindowState = System.Windows.Forms.FormWindowState.Maximized;
+            this.KeyPress += new System.Windows.Forms.KeyPressEventHandler(this.Display_KeyPress);
             this.MouseClick += new System.Windows.Forms.MouseEventHandler(this.Display_MouseClick);
+            this.MouseMove += new System.Windows.Forms.MouseEventHandler(this.Display_MouseMove);
             this.ResumeLayout(false);
 
         }
 
         private void Display_MouseClick(object sender, MouseEventArgs e)
         {
+            //if (e.Button == MouseButtons.Left)
+            //{
+            //    Grid.ToggleCell(Grid.GetCellAtAbsolute(e.X, e.Y));
+            //}
+            //if (e.Button == MouseButtons.Right)
+            //{
+            //    Grid.IsRunning = !Grid.IsRunning;
+            //}
+        }
+
+        private void Display_MouseMove(object sender, MouseEventArgs e)
+        {
+            var cell = Grid.GetCellAtAbsolute(e.X, e.Y);
             if (e.Button == MouseButtons.Left)
             {
-                Grid.ToggleCell(Grid.GetCellAtAbsolute(e.X, e.Y));
+                Grid.SetCellAlive(cell, true);
             }
             if (e.Button == MouseButtons.Right)
             {
+                Grid.SetCellAlive(cell, false);
+            }
+
+            Grid.Update();
+        }
+
+        private void Display_KeyPress(object sender, KeyPressEventArgs e)
+        {
+            if (e.KeyChar == 32)
+            {
                 Grid.IsRunning = !Grid.IsRunning;
+            }
+            if (e.KeyChar == 'r')
+            {
+                Grid.Reset();
+            }
+            if (e.KeyChar == 's')
+            {
+                var dialog = new SaveFileDialog();
+                dialog.ShowDialog();
+                Grid.Save(dialog.FileName);
+                //dialog.FileOk += (a, b) =>
+                //{
+                //    MessageBox.Show(123 + "");
+                //};
+            }
+            if (e.KeyChar == 'l')
+            {
+                var dialog = new OpenFileDialog();
+                dialog.ShowDialog();
+                Grid.Load(dialog.FileName);
+                //dialog.FileOk += (a, b) =>
+                //{
+                //    Grid.Load(dialog.FileName);
+                //};
             }
         }
     }

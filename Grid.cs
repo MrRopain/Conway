@@ -1,5 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Drawing;
+using System.IO;
+using System.Runtime.CompilerServices;
 using System.Windows.Forms;
 
 namespace Conway
@@ -13,7 +17,7 @@ namespace Conway
         
         public Cell[,] Cells;
         
-        public List<Cell> AliveCells;
+        public List<Cell> AliveCells = new List<Cell>();
         public List<Cell> CellsOfInterest;
         public List<Cell> MarkedCells;
         
@@ -43,6 +47,7 @@ namespace Conway
             var centerX = maxX / 2;
             var centerY = maxY / 2;
 
+            AliveCells.Clear();
             Cells = new Cell[maxX, maxY];
             for (var x = 0; x < maxX; x++)
             {
@@ -51,19 +56,20 @@ namespace Conway
                     var cell = CreateCell(x, y);
 
                     // hard code ahead, fuuuckkk (maybe add functionality to import presets)
+                    // update, as CreateCell now allows for alive to be set on creation
                     if (x == centerX && y == centerY)
                     {
-                        cell.IsAlive = true;
+                        SetCellAlive(cell, true);
                     }
                     if (x == centerX - 2 && y == centerY - 1)
                     {
-                        cell.IsAlive = true;
+                        SetCellAlive(cell, true);
                     }
                     if (y == centerY + 1)
                     {
                         if (x == centerX - 3 || x == centerX - 2 || x == centerX + 1 || x == centerX + 2 || x == centerX + 3)
                         {
-                            cell.IsAlive = true;
+                            SetCellAlive(cell, true);
                         }
                     }
                 }
@@ -72,9 +78,35 @@ namespace Conway
             IsSetup = true;
         }
 
+        private void Setup(Bitmap image)
+        {
+            var width = image.Width;
+            var height = image.Height;
+
+            AliveCells.Clear();
+            Cells = new Cell[width, height];
+            for (var x = 0; x < width; x++)
+            {
+                for (var y = 0; y < height; y++)
+                {
+                    CreateCell(x, y, RepresentsAliveCell(image.GetPixel(x, y)));
+                }
+            }
+
+            IsSetup = true;
+        }
+
+        public void Reset()
+        {
+            IsRunning = false;
+            AliveCells.Clear();
+            CellsOfInterest = null;
+            Setup();
+        }
+
         public void Update()
         {
-            PopulateAliveCellsIfNeeded();
+//            PopulateAliveCellsIfNeeded();
 
             if (!IsRunning)
             {
@@ -113,10 +145,65 @@ namespace Conway
             OnUpdate?.Invoke();
         }
 
-        private Cell CreateCell(int x, int y)
+        public void Save(string path)
+        {
+            var maxX = Width / CellSize;
+            var maxY = Height / CellSize;
+            var image = new Bitmap(maxX, maxY);
+            var graphics = Graphics.FromImage(image);
+            graphics.FillRectangle(Brushes.Black, 0, 0, maxX, maxY);
+            
+            for (var x = 0; x < maxX; x++)
+            {
+                for (var y = 0; y < maxY; y++)
+                {
+                    var cell = Cells[x, y];
+                    if (!cell.IsAlive)
+                    {
+                        continue;
+                    }
+                    
+                    graphics.FillRectangle(Brushes.White, x, y, 1, 1);
+                }
+            }
+            
+            image.Save(path);
+
+
+//            using (var writer = new StreamWriter(path))
+//            {
+//                foreach (var cell in Cells)
+//                {
+//                    writer.WriteLine("x:" + cell.GridX + " y:" + cell.GridY + " a:" + cell.IsAlive);
+//                }
+//
+//                writer.Flush();
+//            }
+        }
+
+        public void Load(string path)
+        {
+            Setup((Bitmap) Image.FromFile(path));
+
+//            using (var reader = new StreamReader(path))
+//            {
+//                string line;
+//                while ((line = reader.ReadLine()) != null)
+//                {
+//                    var data = line.Split(' ');
+//                    var x = int.Parse(data[0].Split(':')[1]);
+//                    var y = int.Parse(data[1].Split(':')[1]);
+//                    var alive = bool.Parse(data[2].Split(':')[1]);
+//                    Cells[x, y].IsAlive = alive;
+//                }
+//            }
+        }
+
+        private Cell CreateCell(int x, int y, bool alive = false)
         {
             var cell = new Cell(x, y, CellSize);
             Cells[x, y] = cell;
+            SetCellAlive(cell, alive);
             return cell;
         }
 
@@ -165,9 +252,14 @@ namespace Conway
             }
         }
 
-        public static void ToggleCell(Cell cell)
+        private bool RepresentsAliveCell(Color pixel)
         {
-            cell.IsAlive = !cell.IsAlive;
+            return pixel.R == 255 && pixel.G == 255 && pixel.B == 255;
+        }
+
+        public static void SetCellAlive(Cell cell, bool alive)
+        {
+            cell.IsAlive = alive;
             if (cell.IsAlive)
             {
                 _grid.AliveCells.Add(cell);
